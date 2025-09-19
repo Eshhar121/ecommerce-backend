@@ -1,5 +1,6 @@
 import Order from '../models/Order.js';
 import Review from '../models/Review.js';
+import Product from '../models/Product.js';
 
 export const addReview = async (req, res) => {
   const { productId, orderId, rating, comment } = req.body;
@@ -50,4 +51,73 @@ export const getProductReviews = async (req, res) => {
         console.error(err);
         res.status(500).json({ message: 'Failed to fetch reviews' });
     }
-};  
+};
+
+// Get reviews for all products of a logged-in publisher
+export const getPublisherReviews = async (req, res) => {
+    try {
+        const publisherId = req.user.userId;
+        const products = await Product.find({ publisher: publisherId });
+        const productIds = products.map(p => p._id);
+        const reviews = await Review.find({ product: { $in: productIds } }).populate('user', 'name').populate('product', 'name');
+        res.json({ reviews });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+// Update a review (owner only)
+export const updateReview = async (req, res) => {
+    const { id } = req.params;
+    const { rating, comment } = req.body;
+
+    try {
+        const review = await Review.findById(id);
+
+        if (!review) {
+            return res.status(404).json({ message: 'Review not found' });
+        }
+
+        // Check authorization
+        if (review.user.toString() !== req.user.userId) {
+            return res.status(403).json({ message: 'Not authorized to update this review' });
+        }
+
+        review.rating = rating || review.rating;
+        review.comment = comment || review.comment;
+
+        await review.save();
+
+        res.json({ message: 'Review updated', review });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Failed to update review' });
+    }
+};
+
+// Delete a review (owner or admin)
+export const deleteReview = async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        const review = await Review.findById(id);
+
+        if (!review) {
+            return res.status(404).json({ message: 'Review not found' });
+        }
+
+        // Check authorization
+        if (req.user.role !== 'admin' && review.user.toString() !== req.user.userId) {
+            return res.status(403).json({ message: 'Not authorized to delete this review' });
+        }
+
+        await review.remove();
+
+        res.json({ message: 'Review deleted' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Failed to delete review' });
+    }
+};
+

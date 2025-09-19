@@ -1,6 +1,6 @@
 import Product from '../models/Product.js';
 
-// Add a product (admin only, with Cloudinary image upload)
+// Add a product (publisher only, with Cloudinary image upload)
 export const addProduct = async (req, res) => {
     const { name, description, price, stock, category } = req.body;
 
@@ -26,6 +26,7 @@ export const addProduct = async (req, res) => {
             price,
             stock,
             category,
+            publisher: req.user.userId,
         });
 
         await newProduct.save();
@@ -59,6 +60,91 @@ export const getProducts = async (req, res) => {
             totalPages: Math.ceil(total / limit),
             totalProducts: total,
         });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+// Get products by logged-in publisher
+export const getPublisherProducts = async (req, res) => {
+    try {
+        const products = await Product.find({ publisher: req.user.userId });
+        res.json({ products });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+// Update a product (publisher or admin)
+export const updateProduct = async (req, res) => {
+    const { id } = req.params;
+    const { name, description, price, stock, category } = req.body;
+
+    try {
+        const product = await Product.findById(id);
+
+        if (!product) {
+            return res.status(404).json({ message: 'Product not found' });
+        }
+
+        // Check authorization
+        if (req.user.role === 'publisher' && product.publisher.toString() !== req.user.userId) {
+            return res.status(403).json({ message: 'Not authorized to update this product' });
+        }
+
+        // Handle image update
+        if (req.file) {
+            product.image = req.file.path;
+        }
+
+        product.name = name || product.name;
+        product.description = description || product.description;
+        product.price = price || product.price;
+        product.stock = stock || product.stock;
+        product.category = category || product.category;
+
+        await product.save();
+
+        res.json({ message: 'Product updated', product });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Failed to update product' });
+    }
+};
+
+// Delete a product (publisher or admin)
+export const deleteProduct = async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        const product = await Product.findById(id);
+
+        if (!product) {
+            return res.status(404).json({ message: 'Product not found' });
+        }
+
+        // Check authorization
+        if (req.user.role === 'publisher' && product.publisher.toString() !== req.user.userId) {
+            return res.status(403).json({ message: 'Not authorized to delete this product' });
+        }
+
+        await product.remove();
+
+        res.json({ message: 'Product deleted' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Failed to delete product' });
+    }
+};
+
+// Get product stats (admin only)
+export const getProductStats = async (req, res) => {
+    try {
+        const totalProducts = await Product.countDocuments();
+        // More stats can be added here
+        res.json({ totalProducts });
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: 'Server error' });

@@ -1,10 +1,19 @@
 import express from 'express';
+import {
+    getProfile,
+    updateProfile,
+    becomePublisher,
+    getMyReviews,
+} from '../controllers/userController.js';
 import { authenticateUser } from '../middlewares/authenticateUsers.js';
-import { authorizeRoles } from '../middlewares/authorizeRoles.js';
-import { getAdminStats } from '../controllers/adminController.js';
 
 const router = express.Router();
 
-router.get('/stats', authenticateUser, authorizeRoles('admin'), getAdminStats);
+router.use(authenticateUser);
+
+router.get('/', getProfile);
+router.put('/', updateProfile);
+router.patch('/become-publisher', becomePublisher);
+router.get('/reviews', getMyReviews);
 
 export default router;

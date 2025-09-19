@@ -1,11 +1,21 @@
 import express from 'express';
+import {
+    addReview,
+    getProductReviews,
+    getPublisherReviews,
+    updateReview,
+    deleteReview,
+} from '../controllers/reviewController.js';
 import { authenticateUser } from '../middlewares/authenticateUsers.js';
-import { addReview, getProductReviews } from '../controllers/reviewController.js';
+import { authorizeRoles } from '../middlewares/authorizeRoles.js';
 
 const router = express.Router();
 
-router.use(authenticateUser);
-router.post('/reviews', addReview);
-router.get('/reviews/:productId', getProductReviews);
+router.get('/publisher', authenticateUser, authorizeRoles('publisher'), getPublisherReviews);
+router.get('/:productId', getProductReviews);
+
+router.post('/', authenticateUser, addReview);
+router.put('/:id', authenticateUser, updateReview);
+router.delete('/:id', authenticateUser, authorizeRoles('admin', 'user'), deleteReview);
 
 export default router;

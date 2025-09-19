@@ -5,6 +5,7 @@ import { verifyToken, generateToken } from '../utils/jwt.js';
 import { sendVerificationEmail } from '../utils/mail.js';
 import crypto from 'crypto';
 import { sendEmail } from '../utils/mail.js';
+import { log } from 'console';
 
 export const signup = async (req, res) => {
   const { name, email, password } = req.body;
@@ -14,7 +15,6 @@ export const signup = async (req, res) => {
     if (existingUser) return res.status(400).json({ message: 'User already exists' });
 
     const hashedPassword = await bcrypt.hash(password, 12);
-
     const user = await User.create({
       name,
       email,
@@ -22,21 +22,22 @@ export const signup = async (req, res) => {
       isVerified: false,
     });
 
-    await sendVerificationEmail(user, res);
+    await sendVerificationEmail(user);
 
     res.status(201).json({
-      message: 'User registered successfully. Please verify your email.',
+      message: 'User registered successfully. Please check your inbox.',
       user: { id: user._id, name: user.name, email: user.email },
     });
   } catch (err) {
+    console.error('❌ SIGNUP ERROR:', err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
 
 export const verifyEmail = async (req, res) => {
   try {
-    const decoded = verifyToken(req.params.token); 
-    const user = await User.findById(decoded._id);
+    const decoded = verifyToken(req.params.token);
+    const user = await User.findById(decoded.id);
 
     if (!user) return res.status(404).json({ message: 'User not found' });
     if (user.isVerified) return res.status(400).json({ message: 'Email already verified' });
@@ -48,6 +49,16 @@ export const verifyEmail = async (req, res) => {
   } catch (err) {
     res.status(400).json({ message: 'Invalid or expired token' });
   }
+};
+
+export const getCurrentUser = async (req, res) => {
+  if (!req.user) return res.status(401).json({ message: "Not authenticated" });
+
+  const user = await User.findById(req.user.id).select('name email role');
+
+  if (!user) return res.status(404).json({ message: "User not found" });
+
+  res.status(200).json({ user });
 };
 
 export const login = async (req, res) => {
@@ -62,13 +73,13 @@ export const login = async (req, res) => {
 
     if (!user.isVerified) return res.status(403).json({ message: 'Email not verified' });
 
-    const token = generateToken({ id: user._id });
+    const token = generateToken({ id: user._id, role: user.role });
 
     res.cookie('token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'Lax',
-      maxAge: 24 * 60 * 60 * 1000,
+      maxAge: 24 * 60 * 60 * 1000, //
     });
 
     res.status(200).json({
@@ -80,6 +91,16 @@ export const login = async (req, res) => {
   }
 };
 
+export const logout = (req, res) => {
+  res.cookie('token', '', {
+    httpOnly: true,
+    expires: new Date(0),
+    sameSite: 'Lax',
+    secure: process.env.NODE_ENV === 'production',
+  });
+  res.status(200).json({ message: 'Logged out successfully' });
+};
+
 export const forgotPassword = async (req, res) => {
   try {
     const user = await User.findOne({ email: req.body.email });
@@ -88,15 +109,20 @@ export const forgotPassword = async (req, res) => {
     const resetToken = crypto.randomBytes(32).toString('hex');
 
     user.resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex');
-    user.resetPasswordExpires = Date.now() + 10 * 60 * 1000; // + 10 min
+    user.resetPasswordExpires = Date.now() + 10 * 60 * 1000;
     await user.save();
 
     const message = `Click the link to reset your password: ${process.env.CLIENT_URL}/reset-password/${resetToken}`;
 
+    const html = `
+    <p>Click the link to reset your password: </p>
+    <a href="${process.env.CLIENT_URL}/reset-password/${resetToken}" classname="bg-red">RESET</a>
+  `;
+
     await sendEmail({
       to: user.email,
       subject: 'Password Reset Request',
-      text: message,
+      html,
     });
 
     res.status(200).json({ message: 'Password reset email sent' });

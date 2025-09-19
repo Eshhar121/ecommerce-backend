@@ -4,7 +4,8 @@
   "description": "",
   "main": "server.js",
   "scripts": {
-    "test": "cross-env jest"
+    "test": "cross-env jest",
+    "start": "node server.js"
   },
   "keywords": [],
   "author": "",
