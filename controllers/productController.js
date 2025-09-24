@@ -77,7 +77,7 @@ export const getPublisherProducts = async (req, res) => {
     }
 };
 
-// Update a product (publisher or admin)
+// Update a product (publisher only)
 export const updateProduct = async (req, res) => {
     const { id } = req.params;
     const { name, description, price, stock, category } = req.body;
@@ -90,31 +90,25 @@ export const updateProduct = async (req, res) => {
         }
 
         // Check authorization
-        if (req.user.role === 'publisher' && product.publisher.toString() !== req.user.userId) {
+        if (product.publisher.toString() !== req.user.userId) {
             return res.status(403).json({ message: 'Not authorized to update this product' });
         }
 
-        // Handle image update
+        const updateData = { name, description, price, stock, category };
         if (req.file) {
-            product.image = req.file.path;
+            updateData.image = req.file.path;
         }
 
-        product.name = name || product.name;
-        product.description = description || product.description;
-        product.price = price || product.price;
-        product.stock = stock || product.stock;
-        product.category = category || product.category;
+        const updatedProduct = await Product.findByIdAndUpdate(id, updateData, { new: true });
 
-        await product.save();
-
-        res.json({ message: 'Product updated', product });
+        res.json({ message: 'Product updated', product: updatedProduct });
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: 'Failed to update product' });
     }
 };
 
-// Delete a product (publisher or admin)
+// Delete a product (publisher only)
 export const deleteProduct = async (req, res) => {
     const { id } = req.params;
 
@@ -126,27 +120,15 @@ export const deleteProduct = async (req, res) => {
         }
 
         // Check authorization
-        if (req.user.role === 'publisher' && product.publisher.toString() !== req.user.userId) {
+        if (product.publisher.toString() !== req.user.userId) {
             return res.status(403).json({ message: 'Not authorized to delete this product' });
         }
 
-        await product.remove();
+        await Product.findByIdAndDelete(id);
 
         res.json({ message: 'Product deleted' });
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: 'Failed to delete product' });
-    }
-};
-
-// Get product stats (admin only)
-export const getProductStats = async (req, res) => {
-    try {
-        const totalProducts = await Product.countDocuments();
-        // More stats can be added here
-        res.json({ totalProducts });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: 'Server error' });
     }
 };

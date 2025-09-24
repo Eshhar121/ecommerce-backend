@@ -13,7 +13,7 @@ router.use(authenticateUser);
 
 router.get('/', getProfile);
 router.put('/', updateProfile);
-router.patch('/become-publisher', becomePublisher);
+router.post('/become-publisher', becomePublisher);
 router.get('/reviews', getMyReviews);
 
 export default router;

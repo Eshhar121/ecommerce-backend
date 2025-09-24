@@ -1,71 +1,72 @@
-import User from '../models/User.js';
 import Order from '../models/Order.js';
 import Product from '../models/Product.js';
+import User from '../models/User.js';
 
-// Get publisher profile
-export const getProfile = async (req, res) => {
+export const getEarnings = async (req, res) => {
     try {
-        const publisher = await User.findById(req.user.userId).select('-password');
-        res.json({ publisher });
+        const publisherId = req.user.userId;
+        // Dummy implementation for now
+        res.status(200).json({ totalEarnings: 1500, monthlyEarnings: 300 });
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: 'Server error' });
     }
 };
 
-// Update publisher profile
-export const updateProfile = async (req, res) => {
-    const { name, email } = req.body;
+export const getSalesAnalytics = async (req, res) => {
     try {
-        const publisher = await User.findById(req.user.userId);
+        const publisherId = req.user.userId;
+        // Dummy implementation for now
+        res.status(200).json({ totalSales: 100, averageOrderValue: 50 });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
 
-        if (!publisher) {
+export const getPublisherOrders = async (req, res) => {
+    try {
+        const publisherId = req.user.userId;
+        const products = await Product.find({ publisher: publisherId });
+        const productIds = products.map(p => p._id);
+
+        const orders = await Order.find({ 'items.product': { $in: productIds } })
+            .populate('user', 'name email')
+            .populate('items.product', 'name');
+
+        res.status(200).json({ orders });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+export const getPublisherProfile = async (req, res) => {
+    try {
+        const publisherId = req.user.userId;
+        const user = await User.findById(publisherId).select('-password');
+        if (!user) {
+            return res.status(404).json({ message: 'Publisher not found' });
+        }
+        res.status(200).json({ profile: user });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+export const updatePublisherProfile = async (req, res) => {
+    try {
+        const publisherId = req.user.userId;
+        const { name, email } = req.body; // Add other fields as needed
+
+        const user = await User.findByIdAndUpdate(publisherId, { name, email }, { new: true }).select('-password');
+
+        if (!user) {
             return res.status(404).json({ message: 'Publisher not found' });
         }
 
-        publisher.name = name || publisher.name;
-        publisher.email = email || publisher.email;
-
-        await publisher.save();
-
-        res.json({ message: 'Profile updated', publisher });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: 'Failed to update profile' });
-    }
-};
-
-// Get earnings for the current publisher
-export const getEarnings = async (req, res) => {
-    try {
-        // This is a placeholder. A real implementation would calculate earnings from completed orders.
-        const earnings = 12345.67;
-        res.json({ earnings });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: 'Server error' });
-    }
-};
-
-// Get sales analytics for the current publisher
-export const getSalesAnalytics = async (req, res) => {
-    try {
-        // This is a placeholder. A real implementation would generate sales analytics.
-        const analytics = { totalSales: 100, totalOrders: 50 };
-        res.json({ analytics });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: 'Server error' });
-    }
-};
-
-// Get orders for the current publisher
-export const getOrders = async (req, res) => {
-    try {
-        const products = await Product.find({ publisher: req.user.userId });
-        const productIds = products.map(p => p._id);
-        const orders = await Order.find({ 'items.product': { $in: productIds } }).populate('user', 'name');
-        res.json({ orders });
+        res.status(200).json({ message: 'Profile updated', profile: user });
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: 'Server error' });

@@ -11,9 +11,11 @@ import cartRoutes from './routes/cartRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
 import orderRoutes from './routes/orderRoutes.js';
 import reviewRoutes from './routes/reviewRoutes.js';
+import wishListRoutes from './routes/wishListRoutes.js';
 import publisherRoutes from './routes/publisherRoutes.js';
+
 import adminRoutes from './routes/adminRoutes.js';
-import userManagementRoutes from './routes/userManagementRoutes.js';
+
 
 dotenv.config(); // Load .env values
 
@@ -41,9 +43,11 @@ app.use('/api/cart', cartRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/reviews', reviewRoutes);
+app.use('/api/wishlist', wishListRoutes);
 app.use('/api/publisher', publisherRoutes);
+
 app.use('/api/admin', adminRoutes);
-app.use('/api/users', userManagementRoutes);
+
 
 // === START SERVER ===
 const PORT = process.env.PORT || 5000;

@@ -16,6 +16,6 @@ router.get('/:productId', getProductReviews);
 
 router.post('/', authenticateUser, addReview);
 router.put('/:id', authenticateUser, updateReview);
-router.delete('/:id', authenticateUser, authorizeRoles('admin', 'user'), deleteReview);
+router.delete('/:id', authenticateUser, deleteReview);
 
 export default router;

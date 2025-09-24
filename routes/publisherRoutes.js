@@ -1,10 +1,10 @@
 import express from 'express';
 import {
-    getProfile,
-    updateProfile,
     getEarnings,
     getSalesAnalytics,
-    getOrders,
+    getPublisherOrders,
+    getPublisherProfile,
+    updatePublisherProfile,
 } from '../controllers/publisherController.js';
 import { authenticateUser } from '../middlewares/authenticateUsers.js';
 import { authorizeRoles } from '../middlewares/authorizeRoles.js';
@@ -13,10 +13,10 @@ const router = express.Router();
 
 router.use(authenticateUser, authorizeRoles('publisher'));
 
-router.get('/profile', getProfile);
-router.put('/profile', updateProfile);
 router.get('/earnings', getEarnings);
 router.get('/sales-analytics', getSalesAnalytics);
-router.get('/orders', getOrders);
+router.get('/orders', getPublisherOrders);
+router.get('/profile', getPublisherProfile);
+router.put('/profile', updatePublisherProfile);
 
 export default router;
