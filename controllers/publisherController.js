@@ -4,7 +4,7 @@ import User from '../models/User.js';
 
 export const getEarnings = async (req, res) => {
     try {
-        const publisherId = req.user.userId;
+        const publisherId = req.user.id;
         // Dummy implementation for now
         res.status(200).json({ totalEarnings: 1500, monthlyEarnings: 300 });
     } catch (err) {
@@ -15,7 +15,7 @@ export const getEarnings = async (req, res) => {
 
 export const getSalesAnalytics = async (req, res) => {
     try {
-        const publisherId = req.user.userId;
+        const publisherId = req.user.id;
         // Dummy implementation for now
         res.status(200).json({ totalSales: 100, averageOrderValue: 50 });
     } catch (err) {
@@ -26,7 +26,7 @@ export const getSalesAnalytics = async (req, res) => {
 
 export const getPublisherOrders = async (req, res) => {
     try {
-        const publisherId = req.user.userId;
+        const publisherId = req.user.id;
         const products = await Product.find({ publisher: publisherId });
         const productIds = products.map(p => p._id);
 
@@ -43,12 +43,12 @@ export const getPublisherOrders = async (req, res) => {
 
 export const getPublisherProfile = async (req, res) => {
     try {
-        const publisherId = req.user.userId;
+        const publisherId = req.user.id;
         const user = await User.findById(publisherId).select('-password');
         if (!user) {
             return res.status(404).json({ message: 'Publisher not found' });
         }
-        res.status(200).json({ profile: user });
+        res.status(200).json(user);
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: 'Server error' });
@@ -57,16 +57,16 @@ export const getPublisherProfile = async (req, res) => {
 
 export const updatePublisherProfile = async (req, res) => {
     try {
-        const publisherId = req.user.userId;
-        const { name, email } = req.body; // Add other fields as needed
+        const publisherId = req.user.id;
+        const { name, email, brandName, bio } = req.body; // Add other fields as needed
 
-        const user = await User.findByIdAndUpdate(publisherId, { name, email }, { new: true }).select('-password');
+        const user = await User.findByIdAndUpdate(publisherId, { name, email, brandName, bio }, { new: true }).select('-password');
 
         if (!user) {
             return res.status(404).json({ message: 'Publisher not found' });
         }
 
-        res.status(200).json({ message: 'Profile updated', profile: user });
+        res.status(200).json(user);
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: 'Server error' });

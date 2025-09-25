@@ -19,7 +19,22 @@ import adminRoutes from './routes/adminRoutes.js';
 
 dotenv.config(); // Load .env values
 
+import { Server } from 'socket.io';
+import http from 'http';
+
+import { initSocket } from './socket.js';
+
 const app = express();
+const server = http.createServer(app);
+export const io = new Server(server, {
+  path: '/socket.io',
+  cors: {
+    origin: process.env.CLIENT_URL,
+    methods: ["GET", "POST"]
+  }
+});
+
+initSocket(io);
 
 // === MIDDLEWARES ===
 app.use(helmet()); // Sets security headers
@@ -51,6 +66,6 @@ app.use('/api/admin', adminRoutes);
 
 // === START SERVER ===
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
 export default app;
